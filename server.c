@@ -82,7 +82,7 @@ int main(void) {
           send(gniazdo3, "end", 4, 0);
           send(gniazdo3, "First player have won!", 23, 0);
           send(gniazdo2, "end", 4, 0);
-          send(gniazdo2, "Player first have won!", 23, 0);
+          send(gniazdo2, "First player have won!", 23, 0);
         }
         else{
           send(gniazdo3, "game", 5, 0);
