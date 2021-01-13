@@ -32,7 +32,19 @@ int main(void) {
   unsigned int port;
   char bufor1[1024], bufor2[1024];
   int gniazdo, gniazdo2, gniazdo3;
+  int msgx, msgo;
+  int msgs_size, msgptr;
+  int sendbytes;
   struct sockaddr_in adr, nadawca1, nadawca2;
+
+  char *msgscated;
+  char **msgsx;
+  char **msgso;
+  msgx=1;
+  msgo=1;
+  msgsx = malloc(msgx * sizeof(char*));
+  msgso = malloc(msgo * sizeof(char*));
+
   socklen_t dl = sizeof(struct sockaddr_in);
 
   struct timeval tm;
@@ -55,80 +67,135 @@ int main(void) {
     printf("Listen nie powiodl sie.\n");
     return 1;
   }
+
   printf("Czekam na polaczenie ...\n");
-  if((gniazdo2 = accept(gniazdo, (struct sockaddr*) &nadawca1, &dl))>0){
+  if((link1 = accept(gniazdo, (struct sockaddr*) &nadawca1, &dl))>0){
     printf("Pierwszy gracz połączony\n");
   }
-  if((gniazdo3 = accept(gniazdo, (struct sockaddr*) &nadawca2, &dl))>0){
+  if((link2 = accept(gniazdo, (struct sockaddr*) &nadawca2, &dl))>0){
     printf("Drugi gracz połączony\n");
   }
+
+  memset(bufor1, 0, 1024);
+  memset(bufor2, 0, 1024);
+  recv(link1, bufor1, 1024, 0);
+  /*recv(gniazdo3, bufor2, 1024, 0);*/
+  printf("%s\n", bufor1);
+
   active_player = random()%2;
   if(active_player==0){
-    send(gniazdo2, "You go first!", 14, 0);
-    send(gniazdo3, "You go second!", 15, 0);
+    send(link1, "GIVE_O", 14, 0);
+    /*send(gniazdo3, "GIVE_X", 15, 0);*/
   }
   else{
-    send(gniazdo3, "You go first!", 14, 0);
-    send(gniazdo2, "You go second!", 15, 0);
+    /*send(gniazdo3, "GIVE_O", 14, 0);*/
+    send(link1, "GIVE_X", 15, 0);
   }
-  if(fork() == 0){
-    while(1){
-      memset(bufor1, 0, 1024);
-      recv(gniazdo2, bufor1, 1024, 0);
-      if(strcmp(bufor1, "game")){
-        memset(bufor1, 0, 1024);
-        recv(gniazdo2, bufor1, 1024, 0);
-        if(gameCheck(bufor1)){
-          send(gniazdo3, "end", 4, 0);
-          send(gniazdo3, "First player have won!", 23, 0);
-          send(gniazdo2, "end", 4, 0);
-          send(gniazdo2, "First player have won!", 23, 0);
-        }
-        else{
-          send(gniazdo3, "game", 5, 0);
-          send(gniazdo3, bufor1, 1024, 0);
-        }
-      }
-      if(strcmp(bufor1, "msg")){
-        memset(bufor1, 0, 1024);
-        recv(gniazdo2, bufor1, 1024, 0);
-        send(gniazdo3, "msg", 4, 0);
-        send(gniazdo3, bufor1, 1024, 0);
-      }
-      if(strcmp(bufor1, "img")){
-        memset(bufor1, 0, 1024);
-        recv(gniazdo2, bufor1, 1024, 0);
-        /* tu jeszcze ogarnę*/
-      }
-    }
-  }
-  else{
+
+
+  /*if(fork() == 0){*/
+  while(1){
+    memset(bufor1, 0, 1024);
     memset(bufor2, 0, 1024);
-    recv(gniazdo3, bufor2, 1024, 0);
-    if(strcmp(bufor2, "game")){
-      memset(bufor2, 0, 1024);
-      recv(gniazdo3, bufor2, 1024, 0);
-      if(gameCheck(bufor2)){
-        send(gniazdo2, "end", 4, 0);
-        send(gniazdo2, "Second player have won!", 24, 0);
-        send(gniazdo3, "end", 4, 0);
-        send(gniazdo3, "Second player have won!", 24, 0);
-      }
-      else{
-        send(gniazdo2, "game", 5, 0);
-        send(gniazdo2, bufor2, 1024, 0);
-      }
+    recv(link1, bufor1, 1024, 0);
+    /*recv(link2, bufor2, 1024, 0);*/
+
+    if(strcmp(bufor1, "SENDMSG_X") == 0){
+      memset(bufor1, 0, 1024);
+      recv(link1, bufor1, 1024, 0);
+
+      msgsx[msgx-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgsx[msgx-1][0]='X';
+      msgsx[msgx-1][1]=':';
+      strcat(msgsx[msgx-1], bufor1);
+      msgsx[msgx-1][stlen(bufor1)+2] = '\0'
+      msgx = msgx + 1;
+      msgsx = realloc(msgsx, msgx * sizeof(char));
+
+      msgso[msgo-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgso[msgo-1][0]='X';
+      msgso[msgo-1][1]=':';
+      strcat(msgso[msgo-1], bufor1);
+      msgso[msgo-1][stlen(bufor1)+2] = '\0'
+      msgo = msgo + 1;
+      msgso = realloc(msgso, msgo * sizeof(char));
     }
-    if(strcmp(bufor2, "msg")){
-      memset(bufor2, 0, 1024);
-      recv(gniazdo3, bufor2, 1024, 0);
-      send(gniazdo2, "msg", 4, 0);
-      send(gniazdo2, bufor2, 1024, 0);
+
+    if(strcmp(bufor1, "SENDMSG_O") == 0){
+      memset(bufor1, 0, 1024);
+      recv(link1, bufor1, 1024, 0);
+
+      msgsx[msgx-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgsx[msgx-1][0]='O';
+      msgsx[msgx-1][1]=':';
+      strcat(msgsx[msgx-1], bufor1);
+      msgsx[msgx-1][stlen(bufor1)+2] = '\0'
+      msgx = msgx + 1;
+      msgsx = realloc(msgsx, msgx * sizeof(char));
+
+      msgso[msgo-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgso[msgo-1][0]='O';
+      msgso[msgo-1][1]=':';
+      strcat(msgso[msgo-1], bufor1);
+      msgso[msgo-1][stlen(bufor1)+2] = '\0'
+      msgo = msgo + 1;
+      msgso = realloc(msgso, msgo * sizeof(char));
     }
-    if(strcmp(bufor2, "img")){
-      memset(bufor2, 0, 1024);
-      recv(gniazdo3, bufor2, 1024, 0);
-      /* tu jeszcze ogarnę*/
+
+    if(strcmp(bufor1, "GETMSG_O") == 0){
+      msgs_size = 0;
+      msgptr = 0;
+      sendbytes = 0;
+      for (int i = 0; i < msgo-1; i++){
+        msgs_size = msgs_size + strlen(msgso[i]);
+      }
+      msgscated = malloc(msgs_size * sizeof(char));
+      for (int i = 0; i < msgo-1; i++){
+        memcpy(msgscated[msgptr], msgso[i], strlen(msgso[i]));
+        msgptr = msgptr + strlen(msgso[i]);
+      }
+      memset(bufor1, 0, 1024);
+      sendbytes = strlen(msgscated);
+      msgptr = 0;
+      while(sendbytes>48){
+        memcpy(bufor1, msgscated[0]+msgptr, 48);
+        send(link1, bufor1, 48, 0);
+        msgptr = msgptr + 48;
+        sendbytes = sendbytes - 48
+      }
+      memcpy(bufor1, msgscated[0]+msgptr, senbytes);
+      send(link1, bufor1, senbytes, 0);
+      send(link1, '\0', 1, 0);
+      msgo = 1;
+      msgso = realloc(msgso, msgo * sizeof(char));
+    }
+
+    if(strcmp(bufor1, "GETMSG_X") == 0){
+      msgs_size = 0;
+      msgptr = 0;
+      sendbytes = 0;
+      for (int i = 0; i < msgx-1; i++){
+        msgs_size = msgs_size + strlen(msgsx[i]);
+      }
+      msgscated = malloc(msgs_size * sizeof(char));
+      for (int i = 0; i < msgx-1; i++){
+        memcpy(msgscated[msgptr], msgsx[i], strlen(msgsx[i]));
+        msgptr = msgptr + strlen(msgsx[i]);
+      }
+      memset(bufor1, 0, 1024);
+      sendbytes = strlen(msgscated);
+      msgptr = 0;
+      while(sendbytes>48){
+        memcpy(bufor1, msgscated[0]+msgptr, 48);
+        send(link1, bufor1, 48, 0);
+        msgptr = msgptr + 48;
+        sendbytes = sendbytes - 48
+      }
+      memcpy(bufor1, msgscated[0]+msgptr, senbytes);
+      send(link1, bufor1, senbytes, 0);
+      send(link1, '\0', 1, 0);
+      msgx = 1;
+      msgso = realloc(msgsx, msgx * sizeof(char));
     }
   }
   close(gniazdo);
