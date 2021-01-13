@@ -72,24 +72,27 @@ int main(void) {
   if((link1 = accept(gniazdo, (struct sockaddr*) &nadawca1, &dl))>0){
     printf("Pierwszy gracz połączony\n");
   }
-  if((link2 = accept(gniazdo, (struct sockaddr*) &nadawca2, &dl))>0){
+  /*if((link2 = accept(gniazdo, (struct sockaddr*) &nadawca2, &dl))>0){
     printf("Drugi gracz połączony\n");
-  }
+  }*/
 
   memset(bufor1, 0, 1024);
   memset(bufor2, 0, 1024);
   recv(link1, bufor1, 1024, 0);
-  /*recv(gniazdo3, bufor2, 1024, 0);*/
-  printf("%s\n", bufor1);
+  /*recv(link2, bufor2, 1024, 0);*/
+  printf("Pierwszy: %s\n", bufor1);
+  /*printf("Drugi: %s\n", bufor2);*/
 
   active_player = random()%2;
   if(active_player==0){
-    send(link1, "GIVE_O", 14, 0);
+    send(link1, "GIVE_O", 7, 0);
+    /*send(link2, "GIVE_X", 7, 0);*/
     /*send(gniazdo3, "GIVE_X", 15, 0);*/
   }
   else{
     /*send(gniazdo3, "GIVE_O", 14, 0);*/
-    send(link1, "GIVE_X", 15, 0);
+    send(link1, "GIVE_X", 7, 0);
+    /*send(link2, "GIVE_O", 7, 0);*/
   }
 
 
@@ -97,12 +100,17 @@ int main(void) {
   while(1){
     memset(bufor1, 0, 1024);
     memset(bufor2, 0, 1024);
-    recv(link1, bufor1, 1024, 0);
+    if(recv(link1, bufor1, 1024, 0) > 0){
+      printf("Pierwszy: %s\n", bufor1);
+    }
     /*recv(link2, bufor2, 1024, 0);*/
+    send(link1, "\0", 1, 0);
 
     if(strcmp(bufor1, "SENDMSG_X") == 0){
       memset(bufor1, 0, 1024);
       recv(link1, bufor1, 1024, 0);
+      send(link1, "\0", 1, 0);
+      printf("SENDMSG_X: %s\n", bufor1);
 
       msgsx[msgx-1] = malloc((strlen(bufor1)+3) * sizeof(char));
       msgsx[msgx-1][0]='X';
@@ -124,6 +132,8 @@ int main(void) {
     if(strcmp(bufor1, "SENDMSG_O") == 0){
       memset(bufor1, 0, 1024);
       recv(link1, bufor1, 1024, 0);
+      printf("SENDMSG_O: %s\n", bufor1);
+      send(link1, "\0", 1, 0);
 
       msgsx[msgx-1] = malloc((strlen(bufor1)+3) * sizeof(char));
       msgsx[msgx-1][0]='O';
@@ -148,6 +158,7 @@ int main(void) {
       sendbytes = 0;
       for (int i = 0; i < msgo-1; i++){
         msgs_size = msgs_size + strlen(msgso[i]);
+        printf("%s\n", msgso[i]);
       }
       msgscated = malloc(msgs_size * sizeof(char));
       for (int i = 0; i < msgo-1; i++){
@@ -166,8 +177,9 @@ int main(void) {
       memcpy(bufor1, &msgscated[0]+msgptr, sendbytes);
       send(link1, bufor1, sendbytes, 0);
       send(link1, '\0', 1, 0);
+      free(msgso);
       msgo = 1;
-      msgso = realloc(msgso, msgo * sizeof(char));
+      msgso = malloc(msgo * sizeof(char));
     }
 
     if(strcmp(bufor1, "GETMSG_X") == 0){
@@ -175,27 +187,34 @@ int main(void) {
       msgptr = 0;
       sendbytes = 0;
       for (int i = 0; i < msgx-1; i++){
-        msgs_size = msgs_size + strlen(msgsx[i]);
+        msgs_size = msgs_size + strlen(msgsx[i])+1;
+        printf("%s\n", msgsx[i]);
       }
       msgscated = malloc(msgs_size * sizeof(char));
       for (int i = 0; i < msgx-1; i++){
         memcpy(&msgscated[msgptr], msgsx[i], strlen(msgsx[i]));
-        msgptr = msgptr + strlen(msgsx[i]);
+        msgptr = msgptr + strlen(msgsx[i])+1;
       }
       memset(bufor1, 0, 1024);
       sendbytes = strlen(msgscated);
       msgptr = 0;
       while(sendbytes>48){
+        printf("sendbytes over 48\n");
         memcpy(bufor1, &msgscated[0]+msgptr, 48);
+        printf("%s\n", bufor1);
         send(link1, bufor1, 48, 0);
         msgptr = msgptr + 48;
         sendbytes = sendbytes - 48;
       }
       memcpy(bufor1, &msgscated[0]+msgptr, sendbytes);
-      send(link1, bufor1, sendbytes, 0);
-      send(link1, '\0', 1, 0);
+      printf("before send: %s %d\n", bufor1, sendbytes);
+    send(link1, bufor1, sendbytes, 0);
+      if(sendbytes == 48){
+        send(link1, '\0', 1, 0);
+      }
+      free(msgsx);
       msgx = 1;
-      msgso = realloc(msgsx, msgx * sizeof(char));
+      msgsx = malloc(msgx * sizeof(char));
     }
   }
   close(gniazdo);
