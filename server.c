@@ -31,7 +31,7 @@ int gameCheck (char tab[]){
 int main(void) {
   unsigned int port;
   char bufor1[1024], bufor2[1024];
-  int gniazdo, gniazdo2, gniazdo3;
+  int gniazdo, link1, link2;
   int msgx, msgo;
   int msgs_size, msgptr;
   int sendbytes;
@@ -108,7 +108,7 @@ int main(void) {
       msgsx[msgx-1][0]='X';
       msgsx[msgx-1][1]=':';
       strcat(msgsx[msgx-1], bufor1);
-      msgsx[msgx-1][stlen(bufor1)+2] = '\0'
+      msgsx[msgx-1][strlen(bufor1)+2] = '\0';
       msgx = msgx + 1;
       msgsx = realloc(msgsx, msgx * sizeof(char));
 
@@ -116,7 +116,7 @@ int main(void) {
       msgso[msgo-1][0]='X';
       msgso[msgo-1][1]=':';
       strcat(msgso[msgo-1], bufor1);
-      msgso[msgo-1][stlen(bufor1)+2] = '\0'
+      msgso[msgo-1][strlen(bufor1)+2] = '\0';
       msgo = msgo + 1;
       msgso = realloc(msgso, msgo * sizeof(char));
     }
@@ -129,7 +129,7 @@ int main(void) {
       msgsx[msgx-1][0]='O';
       msgsx[msgx-1][1]=':';
       strcat(msgsx[msgx-1], bufor1);
-      msgsx[msgx-1][stlen(bufor1)+2] = '\0'
+      msgsx[msgx-1][strlen(bufor1)+2] = '\0';
       msgx = msgx + 1;
       msgsx = realloc(msgsx, msgx * sizeof(char));
 
@@ -137,7 +137,7 @@ int main(void) {
       msgso[msgo-1][0]='O';
       msgso[msgo-1][1]=':';
       strcat(msgso[msgo-1], bufor1);
-      msgso[msgo-1][stlen(bufor1)+2] = '\0'
+      msgso[msgo-1][strlen(bufor1)+2] = '\0';
       msgo = msgo + 1;
       msgso = realloc(msgso, msgo * sizeof(char));
     }
@@ -151,20 +151,20 @@ int main(void) {
       }
       msgscated = malloc(msgs_size * sizeof(char));
       for (int i = 0; i < msgo-1; i++){
-        memcpy(msgscated[msgptr], msgso[i], strlen(msgso[i]));
+        memcpy(&msgscated[msgptr], msgso[i], strlen(msgso[i]));
         msgptr = msgptr + strlen(msgso[i]);
       }
       memset(bufor1, 0, 1024);
       sendbytes = strlen(msgscated);
       msgptr = 0;
       while(sendbytes>48){
-        memcpy(bufor1, msgscated[0]+msgptr, 48);
+        memcpy(bufor1, &msgscated[0]+msgptr, 48);
         send(link1, bufor1, 48, 0);
         msgptr = msgptr + 48;
-        sendbytes = sendbytes - 48
+        sendbytes = sendbytes - 48;
       }
-      memcpy(bufor1, msgscated[0]+msgptr, senbytes);
-      send(link1, bufor1, senbytes, 0);
+      memcpy(bufor1, &msgscated[0]+msgptr, sendbytes);
+      send(link1, bufor1, sendbytes, 0);
       send(link1, '\0', 1, 0);
       msgo = 1;
       msgso = realloc(msgso, msgo * sizeof(char));
@@ -179,20 +179,20 @@ int main(void) {
       }
       msgscated = malloc(msgs_size * sizeof(char));
       for (int i = 0; i < msgx-1; i++){
-        memcpy(msgscated[msgptr], msgsx[i], strlen(msgsx[i]));
+        memcpy(&msgscated[msgptr], msgsx[i], strlen(msgsx[i]));
         msgptr = msgptr + strlen(msgsx[i]);
       }
       memset(bufor1, 0, 1024);
       sendbytes = strlen(msgscated);
       msgptr = 0;
       while(sendbytes>48){
-        memcpy(bufor1, msgscated[0]+msgptr, 48);
+        memcpy(bufor1, &msgscated[0]+msgptr, 48);
         send(link1, bufor1, 48, 0);
         msgptr = msgptr + 48;
-        sendbytes = sendbytes - 48
+        sendbytes = sendbytes - 48;
       }
-      memcpy(bufor1, msgscated[0]+msgptr, senbytes);
-      send(link1, bufor1, senbytes, 0);
+      memcpy(bufor1, &msgscated[0]+msgptr, sendbytes);
+      send(link1, bufor1, sendbytes, 0);
       send(link1, '\0', 1, 0);
       msgx = 1;
       msgso = realloc(msgsx, msgx * sizeof(char));
