@@ -37,6 +37,15 @@ int main(void) {
   int sendbytes;
   struct sockaddr_in adr, nadawca1, nadawca2;
 
+  int gameboard[9];
+  char gamesend[19];
+  memset(gamesend, ' ', 19);
+  for (int i = 0; i<9; i++){
+    gameboard[i]=0;
+    gamesend[2*i]='N';
+  }
+  gamesend[18] = 'O';
+
   char *msgscated;
   char **msgsx;
   char **msgso;
@@ -85,13 +94,13 @@ int main(void) {
 
   active_player = random()%2;
   if(active_player==0){
-    send(link1, "GIVE_O", 7, 0);
+    send(link1, "GIVE_O", 6, 0);
     /*send(link2, "GIVE_X", 7, 0);*/
     /*send(gniazdo3, "GIVE_X", 15, 0);*/
   }
   else{
     /*send(gniazdo3, "GIVE_O", 14, 0);*/
-    send(link1, "GIVE_X", 7, 0);
+    send(link1, "GIVE_X", 6, 0);
     /*send(link2, "GIVE_O", 7, 0);*/
   }
 
@@ -105,6 +114,28 @@ int main(void) {
     }
     /*recv(link2, bufor2, 1024, 0);*/
     send(link1, "\0", 1, 0);
+
+    if(strcmp(bufor1, "GAME_X") == 0){
+      memset(bufor1, 0, 1024);
+      recv(link1, bufor1, 1024, 0);
+      gameboard[atoi(bufor1)] = 2;
+      gamesend[atoi(bufor1)*2] = 'X';
+      gamesend[18] = 'O';
+      send(link1, '\0', 1, 0);
+    }
+
+    if(strcmp(bufor1, "GAME_O") == 0){
+      memset(bufor1, 0, 1024);
+      recv(link1, bufor1, 1024, 0);
+      gameboard[atoi(bufor1)] = 1;
+      gamesend[atoi(bufor1)*2] = 'O';
+      gamesend[18] = 'X';
+      send(link1, '\0', 1, 0);
+    }
+
+    if(strcmp(bufor1, "BOARD") == 0){
+      send(link1, gamesend, 19, 0);
+    }
 
     if(strcmp(bufor1, "SENDMSG_X") == 0){
       memset(bufor1, 0, 1024);
