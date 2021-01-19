@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+
+
 /*
 0|1|2
 3|4|5
@@ -96,11 +98,9 @@ int main(void) {
   if(active_player==0){
     send(link1, "GIVE_O", 6, 0);
     /*send(link2, "GIVE_X", 7, 0);*/
-    /*send(gniazdo3, "GIVE_X", 15, 0);*/
   }
   else{
-    /*send(gniazdo3, "GIVE_O", 14, 0);*/
-    send(link1, "GIVE_X", 6, 0);
+    send(link1, "GIVE_O", 6, 0);
     /*send(link2, "GIVE_O", 7, 0);*/
   }
 
@@ -129,7 +129,7 @@ int main(void) {
       recv(link1, bufor1, 1024, 0);
       gameboard[atoi(bufor1)] = 1;
       gamesend[atoi(bufor1)*2] = 'O';
-      gamesend[18] = 'X';
+      gamesend[18] = 'O';
       send(link1, '\0', 1, 0);
     }
 
@@ -143,19 +143,21 @@ int main(void) {
       send(link1, "\0", 1, 0);
       printf("SENDMSG_X: %s\n", bufor1);
 
-      msgsx[msgx-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgsx[msgx-1] = malloc((strlen(bufor1)+4) * sizeof(char));
       msgsx[msgx-1][0]='X';
       msgsx[msgx-1][1]=':';
+      msgsx[msgx-1][2]=' ';
       strcat(msgsx[msgx-1], bufor1);
-      msgsx[msgx-1][strlen(bufor1)+2] = '\0';
+      msgsx[msgx-1][strlen(bufor1)+3] = '\0';
       msgx = msgx + 1;
       msgsx = realloc(msgsx, msgx * sizeof(char));
 
-      msgso[msgo-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgso[msgo-1] = malloc((strlen(bufor1)+4) * sizeof(char));
       msgso[msgo-1][0]='X';
       msgso[msgo-1][1]=':';
+      msgso[msgo-1][2]=' ';
       strcat(msgso[msgo-1], bufor1);
-      msgso[msgo-1][strlen(bufor1)+2] = '\0';
+      msgso[msgo-1][strlen(bufor1)+3] = '\0';
       msgo = msgo + 1;
       msgso = realloc(msgso, msgo * sizeof(char));
     }
@@ -166,19 +168,21 @@ int main(void) {
       printf("SENDMSG_O: %s\n", bufor1);
       send(link1, "\0", 1, 0);
 
-      msgsx[msgx-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgsx[msgx-1] = malloc((strlen(bufor1)+4) * sizeof(char));
       msgsx[msgx-1][0]='O';
       msgsx[msgx-1][1]=':';
+      msgsx[msgx-1][2]=' ';
       strcat(msgsx[msgx-1], bufor1);
-      msgsx[msgx-1][strlen(bufor1)+2] = '\0';
+      msgsx[msgx-1][strlen(bufor1)+3] = '\0';
       msgx = msgx + 1;
       msgsx = realloc(msgsx, msgx * sizeof(char));
 
-      msgso[msgo-1] = malloc((strlen(bufor1)+3) * sizeof(char));
+      msgso[msgo-1] = malloc((strlen(bufor1)+4) * sizeof(char));
       msgso[msgo-1][0]='O';
       msgso[msgo-1][1]=':';
+      msgso[msgo-1][2]=' ';
       strcat(msgso[msgo-1], bufor1);
-      msgso[msgo-1][strlen(bufor1)+2] = '\0';
+      msgso[msgo-1][strlen(bufor1)+3] = '\0';
       msgo = msgo + 1;
       msgso = realloc(msgso, msgo * sizeof(char));
     }
