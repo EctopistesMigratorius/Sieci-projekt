@@ -9,6 +9,38 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 
+int boardFull(int board[]){
+  for (int i = 0; i < 9; i++){
+    if (board[i] == 0){
+      return 0;
+    }
+  }
+  return 1;
+}
+
+int compareArray(int a, int b, int c, int board[]){
+  if(board[a] == board[b] && board[b] == board[c] && board [a] != 0){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}
+
+int gameCheck(int board[]){
+  if(compareArray(0,1,2,board) || compareArray(3,4,5,board) || compareArray(6,7,8,board) || compareArray(0,3,6,board) || compareArray(1,4,7,board) || compareArray(2,5,8,board) || compareArray(0,4,8,board) || compareArray(2,4,6,board)){
+    return 2;
+  }
+  else{
+    if(boardFull(board)){
+      return 1;
+    }
+    else{
+      return 0;
+    }
+  }
+}
+
 void* create_shared_memory(size_t size) {
   // Our memory buffer will be readable and writable:
   int protection = PROT_READ | PROT_WRITE;
@@ -55,7 +87,7 @@ int main(void) {
   gettimeofday(&tm, NULL);
   srandom(tm.tv_sec + tm.tv_usec * 1000000ul);
 
-  strcpy(dest, "/home/students/s452664/TicTacToe-Project/files/");
+  strcpy(dest, "/home/pigeon/files/");
 
   memset(gamesend, ' ', 19);
   for (int i = 0; i<9; i++){
@@ -151,6 +183,64 @@ int main(void) {
         gamesend[atoi(bufor1)*2] = 'O';
         gamesend[18] = 'X';
         printf("Changed: %s\n", gamesend);
+        if(gameCheck(gameboard)==2){
+          memcpy(msgsx, shmem_msgsx, sizeof(msgsx));
+          memcpy(msgso, shmem_msgso, sizeof(msgso));
+
+          char *msgx = malloc((strlen("O wygrywa")+4)*sizeof(char));
+          memset(msgx, 0, strlen(bufor1)+4);
+          msgx[0]='G';
+          msgx[1]=':';
+          msgx[2]=' ';
+          strcat(msgx, "O wygrywa");
+          msgx[strlen("O wygrywa")+3]='\0';
+          strcat(msgsx, msgx);
+
+          char *msgo = malloc((strlen("O wygrywa")+4)*sizeof(char));
+          memset(msgo, 0, strlen("O wygrywa")+4);
+          msgo[0]='G';
+          msgo[1]=':';
+          msgo[2]=' ';
+          strcat(msgo, "O wygrywa");
+          msgo[strlen("O wygrywa")+3]='\0';
+          strcat(msgso, msgo);
+
+          memcpy(shmem_msgsx, msgsx, sizeof(msgsx));
+          memcpy(shmem_msgso, msgso, sizeof(msgso));
+
+          free(msgx);
+          free(msgo);
+        }
+        else{
+          if (gameCheck(gameboard)==1){
+            memcpy(msgsx, shmem_msgsx, sizeof(msgsx));
+            memcpy(msgso, shmem_msgso, sizeof(msgso));
+
+            char *msgx = malloc((strlen("Remis")+4)*sizeof(char));
+            memset(msgx, 0, strlen(bufor1)+4);
+            msgx[0]='G';
+            msgx[1]=':';
+            msgx[2]=' ';
+            strcat(msgx, "Remis");
+            msgx[strlen("Remis")+3]='\0';
+            strcat(msgsx, msgx);
+
+            char *msgo = malloc((strlen("Remis")+4)*sizeof(char));
+            memset(msgo, 0, strlen("Remis")+4);
+            msgo[0]='G';
+            msgo[1]=':';
+            msgo[2]=' ';
+            strcat(msgo, "Remis");
+            msgo[strlen("Remis")+3]='\0';
+            strcat(msgso, msgo);
+
+            memcpy(shmem_msgsx, msgsx, sizeof(msgsx));
+            memcpy(shmem_msgso, msgso, sizeof(msgso));
+
+            free(msgx);
+            free(msgo);
+          }
+        }
         memcpy(shmem_gamesend, gamesend, sizeof(gamesend));
         memcpy(shmem_gameboard, gameboard, sizeof(gameboard));
         send(link1, "OK", 2, 0);
@@ -190,6 +280,9 @@ int main(void) {
 
         memcpy(shmem_msgsx, msgsx, sizeof(msgsx));
         memcpy(shmem_msgso, msgso, sizeof(msgso));
+
+        free(msgx);
+        free(msgo);
       }
 
       if(strcmp(bufor1, "GETMSG_O") == 0){
@@ -221,12 +314,14 @@ int main(void) {
         memset(msgso, 0, 5000);
         memcpy(shmem_msgso, msgso, sizeof(msgso));
       }
+
       if(strcmp(bufor1, "DISCONNECT") == 0){
         send(link1, "OK", 2, 0);
         close(link1);
         close(socket1);
         break;
       }
+      
       if(strcmp(bufor1, "SEND_FILE") == 0){
         bytes = 0;
         newbytes = 0;
@@ -248,53 +343,55 @@ int main(void) {
           memset(bufor1, 0, 1024);
           newbytes = recv(link1, bufor1, 1023, 0);
           fwrite(bufor1, 1, strlen(bufor1), f);
-          printf("%s", bufor1);
           bytes += newbytes;
         }
-        printf("\n");
         send(link1, "OK", 2, 0);
         fclose(f);
       }
+
       if(strcmp(bufor1, "GET_FILE") == 0){
         filesize = 0;
         send(link1, "OK", 2, 0);
         memset(bufor1, 0, 1024);
         recv(link1, bufor1, 1023, 0);
-        strcpy(fname, bufor2);
+        strcpy(fname, bufor1);
         printf("Nazwa Pliku: %s\n", fname);
         memset(bufor1, 0, 1024);
         strcpy(fdest, dest);
         strcat(fdest, fname);
         memset(fname, 0, strlen(fname));
-        f = fopen(fdest, "r");
-        fseek(f, 0, SEEK_END);
-        filesize = ftell(f);
-        fseek(f, 0, SEEK_SET);
-        data = malloc(filesize+1 * sizeof(char));
-        memset(data, 0, filesize+1);
-        fread(data, filesize+1, 1, f);
-        printf("File: %s", data);
-        dataptr = 0;
-        sendbytes = 0;
-        sendbytes = strlen(data);
-        while(sendbytes>48){
-          memcpy(bufor1, &data[0]+dataptr, 48);
-          send(link1, bufor1, 48, 0);
-          dataptr = dataptr + 48;
-          sendbytes = sendbytes - 48;
-        }
-        memcpy(bufor1, &data[0]+msgptr, sendbytes);
-        if (sendbytes==0){
-          send(link1, "OK", 2, 0);
+        if( access( fdest, F_OK ) != 0 ) {
+          send(link2, "OK", 2, 0);
         }
         else{
-          send(link1, bufor1, sendbytes, 0);
+          f = fopen(fdest, "r+");
+          fseek(f, 0, SEEK_END);
+          filesize = ftell(f);
+          fseek(f, 0, SEEK_SET);
+          data = malloc(1025 * sizeof(char));
+          dataptr = 0;
+          sendbytes = 0;
+          sendbytes = filesize;
+          while(sendbytes>1024){
+              memset(data, 0, 1025);
+              fread(data, 1024, 1, f);
+              send(link1, data, 1024, 0);
+              sendbytes = sendbytes - 1024;
+          }
+          if (sendbytes==0){
+            send(link1, "OK", 2, 0);
+          }
+          else{
+            memset(data, 0, 1025);
+            fread(data, sendbytes, 1, f);
+            send(link1, data, sendbytes, 0);
+          }
+          if(sendbytes == 1024){
+            send(link1, "OK", 2, 0);
+          }
+          free(data);
+          fclose(f);
         }
-        if(sendbytes == 48){
-          send(link1, "OK", 2, 0);
-        }
-        free(data);
-
       }
     }
   }
@@ -315,6 +412,64 @@ int main(void) {
         gamesend[atoi(bufor2)*2] = 'X';
         gamesend[18] = 'O';
         printf("Changed: %s\n", gamesend);
+        if(gameCheck(gameboard)==2){
+          memcpy(msgsx, shmem_msgsx, sizeof(msgsx));
+          memcpy(msgso, shmem_msgso, sizeof(msgso));
+
+          char *msgx = malloc((strlen("X wygrywa")+4)*sizeof(char));
+          memset(msgx, 0, strlen(bufor1)+4);
+          msgx[0]='G';
+          msgx[1]=':';
+          msgx[2]=' ';
+          strcat(msgx, "X wygrywa");
+          msgx[strlen("X wygrywa")+3]='\0';
+          strcat(msgsx, msgx);
+
+          char *msgo = malloc((strlen("X wygrywa")+4)*sizeof(char));
+          memset(msgo, 0, strlen("X wygrywa")+4);
+          msgo[0]='G';
+          msgo[1]=':';
+          msgo[2]=' ';
+          strcat(msgo, "X wygrywa");
+          msgo[strlen("X wygrywa")+3]='\0';
+          strcat(msgso, msgo);
+
+          memcpy(shmem_msgsx, msgsx, sizeof(msgsx));
+          memcpy(shmem_msgso, msgso, sizeof(msgso));
+
+          free(msgx);
+          free(msgo);
+        }
+        else{
+          if (gameCheck(gameboard)==1){
+            memcpy(msgsx, shmem_msgsx, sizeof(msgsx));
+            memcpy(msgso, shmem_msgso, sizeof(msgso));
+
+            char *msgx = malloc((strlen("Remis")+4)*sizeof(char));
+            memset(msgx, 0, strlen(bufor1)+4);
+            msgx[0]='G';
+            msgx[1]=':';
+            msgx[2]=' ';
+            strcat(msgx, "Remis");
+            msgx[strlen("Remis")+3]='\0';
+            strcat(msgsx, msgx);
+
+            char *msgo = malloc((strlen("Remis")+4)*sizeof(char));
+            memset(msgo, 0, strlen("Remis")+4);
+            msgo[0]='G';
+            msgo[1]=':';
+            msgo[2]=' ';
+            strcat(msgo, "Remis");
+            msgo[strlen("Remis")+3]='\0';
+            strcat(msgso, msgo);
+
+            memcpy(shmem_msgsx, msgsx, sizeof(msgsx));
+            memcpy(shmem_msgso, msgso, sizeof(msgso));
+
+            free(msgx);
+            free(msgo);
+          }
+        }
         memcpy(shmem_gamesend, gamesend, sizeof(gamesend));
         memcpy(shmem_gameboard, gameboard, sizeof(gameboard));
         send(link2, "OK", 2, 0);
@@ -395,32 +550,26 @@ int main(void) {
       if(strcmp(bufor2, "SEND_FILE") == 0){
         bytes = 0;
         newbytes = 0;
-        filesize = 0;
         send(link2, "OK", 2, 0);
         memset(bufor2, 0, 1024);
         recv(link2, bufor2, 1023, 0);
         strcpy(fname, bufor2);
-        printf("Nazwa Pliku: %s\n", fname);
+        printf("Nazwa Pliku: %s\n", bufor2);
         send(link2, "OK", 2, 0);
         memset(bufor2, 0, 1024);
         recv(link2, bufor2, 1023, 0);
         send(link2, "OK", 2, 0);
         filesize = atoi(bufor2);
         printf("Wielkość Pliku: %d\n", filesize);
-        memset(data, 0, 1024);
         strcpy(fdest, dest);
         strcat(fdest, fname);
-        memset(fname, 0, strlen(fname));
         f = fopen(fdest, "wb+");
         while(bytes < filesize){
           memset(bufor2, 0, 1024);
           newbytes = recv(link2, bufor2, 1023, 0);
           fwrite(bufor2, 1, strlen(bufor2), f);
-          printf("%s", bufor2);
           bytes += newbytes;
         }
-        printf("\n");
-        memset(fdest, 0, strlen(fdest));
         send(link2, "OK", 2, 0);
         fclose(f);
       }
@@ -445,14 +594,12 @@ int main(void) {
           filesize = ftell(f);
           fseek(f, 0, SEEK_SET);
           data = malloc(1025 * sizeof(char));
-          printf("File: ");
           dataptr = 0;
           sendbytes = 0;
           sendbytes = filesize;
           while(sendbytes>1024){
               memset(data, 0, 1025);
               fread(data, 1024, 1, f);
-              printf("%s", data);
               send(link2, data, 1024, 0);
               sendbytes = sendbytes - 1024;
           }
@@ -463,7 +610,6 @@ int main(void) {
             memset(data, 0, 1025);
             fread(data, sendbytes, 1, f);
             send(link2, data, sendbytes, 0);
-            printf("%s\n", data);
           }
           if(sendbytes == 1024){
             send(link2, "OK", 2, 0);
